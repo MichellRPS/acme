@@ -69,11 +69,17 @@ class User extends \yii\db\ActiveRecord
             $this->password = Yii::$app->getSecurity()->generatePasswordHash($this->password);
         }
         $this->updated = new Expression('NOW()');
-        return parent::beforeValidate();
+        return parent::beforeSave($insert);
     }
     
     private function setUid() {
         $this->uid = Yii::$app->getSecurity()->generatePasswordHash(date('YmdHis').rand(1, 999999));
+    }
+    
+    public function activate() {
+        $this->status = self::STATUS_ACTIVE;
+        $this->setUid();
+        return $this->save();
     }
 
     /**

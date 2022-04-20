@@ -10,6 +10,8 @@ use yii\filters\VerbFilter;
 use app\models\LoginForm;
 use app\models\ContactForm;
 use app\models\User;
+use app\models\AcmeMailer;
+use yii\web\NotFoundHttpException;
 
 class SiteController extends Controller {
 
@@ -89,14 +91,28 @@ class SiteController extends Controller {
         }
         
         $newUser = New User();
-        if ($newUser->load(Yii::$app->request->post()) && $newUser->save()) {
-            Yii::$app->session->setFlash('success', Yii::t('app', 'Successfully registered'));
+        if ($newUser->load(Yii::$app->request->post()) && $newUser->save() && AcmeMailer::send(AcmeMailer::TYPE_REGISTRATION, $newUser)) {
+            Yii::$app->session->setFlash('success', Yii::t('app', Yii::t('app', 'Successfully registered! Check your email to activate your account')));
             return $this->goHome();
         }
         
         return $this->render('register', [
             'newUser' => $newUser,
         ]);
+    }
+    
+    public function actionActivate($user, $token) {
+        $userToActivate = User::find()->where(['id' => $user, 'uid' => $token])->one();
+        
+        if (empty($userToActivate)) {
+            throw new NotFoundHttpException('User not found');
+        }
+        if (! $userToActivate->activate()) {
+            Yii::$app->session->setFlash('error', Yii::t('app', 'Couldn\'t activate'));
+        } else {
+            Yii::$app->session->setFlash('success', Yii::t('app', 'Successfully activated'));
+        }
+        return $this->goHome();
     }
 
     /**

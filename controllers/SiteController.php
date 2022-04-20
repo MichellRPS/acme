@@ -91,7 +91,7 @@ class SiteController extends Controller {
         }
         
         $newUser = New User();
-        if ($newUser->load(Yii::$app->request->post()) && $newUser->save() && AcmeMailer::send(AcmeMailer::TYPE_REGISTRATION, $newUser)) {
+        if ($newUser->load(Yii::$app->request->post()) && $newUser->save() /*&& AcmeMailer::send(AcmeMailer::TYPE_REGISTRATION, $newUser)*/) {
             Yii::$app->session->setFlash('success', Yii::t('app', Yii::t('app', 'Successfully registered! Check your email to activate your account')));
             return $this->goHome();
         }

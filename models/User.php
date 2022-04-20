@@ -16,6 +16,7 @@ use yii\db\Expression;
  * @property int $status
  * @property int $contact_email
  * @property int $contact_phone
+ * @property string $auth_key
  * @property string $created
  * @property string $updated
  *
@@ -24,46 +25,44 @@ use yii\db\Expression;
  * @property PhoneNumber[] $phoneNumbers
  * @property Trip[] $trips
  */
-class User extends \yii\db\ActiveRecord
-{
-    
+class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface {
+
     const STATUS_INSERTED = 0;
     const STATUS_ACTIVE = 1;
     const STATUS_BLOCKED = 2;
-    
+
     /**
      * {@inheritdoc}
      */
-    public static function tableName()
-    {
+    public static function tableName() {
         return 'user';
     }
 
     /**
      * {@inheritdoc}
      */
-    public function rules()
-    {
+    public function rules() {
         return [
-            [['uid', 'username', 'email', 'password'], 'required'],
+            [['uid', 'username', 'email', 'password', 'auth_key'], 'required'],
             [['status', 'contact_email', 'contact_phone'], 'integer'],
             [['email'], 'email'],
             [['created', 'updated'], 'safe'],
-            [['uid', 'password'], 'string', 'max' => 60],
+            [['uid', 'password', 'auth_key'], 'string', 'max' => 60],
             [['username'], 'string', 'max' => 45],
             [['email'], 'string', 'max' => 255],
             [['uid'], 'unique'],
-            [['email'], 'unique'],
+            [['email', 'auth_key'], 'unique'],
         ];
     }
-    
+
     public function beforeValidate() {
         if ($this->isNewRecord) {
             $this->setUid();
+            $this->setAuthKey();
         }
         return parent::beforeValidate();
     }
-    
+
     public function beforeSave($insert) {
         if ($this->isNewRecord) {
             $this->password = Yii::$app->getSecurity()->generatePasswordHash($this->password);
@@ -71,11 +70,15 @@ class User extends \yii\db\ActiveRecord
         $this->updated = new Expression('NOW()');
         return parent::beforeSave($insert);
     }
-    
+
     private function setUid() {
-        $this->uid = Yii::$app->getSecurity()->generatePasswordHash(date('YmdHis').rand(1, 999999));
+        $this->uid = Yii::$app->security->generateRandomString(60);
     }
-    
+
+    private function setAuthKey() {
+        $this->auth_key = Yii::$app->security->generateRandomString(60);
+    }
+
     public function activate() {
         $this->status = self::STATUS_ACTIVE;
         $this->setUid();
@@ -85,8 +88,7 @@ class User extends \yii\db\ActiveRecord
     /**
      * {@inheritdoc}
      */
-    public function attributeLabels()
-    {
+    public function attributeLabels() {
         return [
             'id' => Yii::t('app', 'ID'),
             'uid' => Yii::t('app', 'Uid'),
@@ -96,6 +98,7 @@ class User extends \yii\db\ActiveRecord
             'status' => Yii::t('app', 'Status'),
             'contact_email' => Yii::t('app', 'Contact Email'),
             'contact_phone' => Yii::t('app', 'Contact Phone'),
+            'auth_key' => Yii::t('app', 'Authentication Key'),
             'created' => Yii::t('app', 'Created'),
             'updated' => Yii::t('app', 'Updated'),
         ];
@@ -106,8 +109,7 @@ class User extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getFromMessages()
-    {
+    public function getFromMessages() {
         return $this->hasMany(Message::className(), ['from_user_id' => 'id']);
     }
 
@@ -116,8 +118,7 @@ class User extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getToMessages()
-    {
+    public function getToMessages() {
         return $this->hasMany(Message::className(), ['to_user_id' => 'id']);
     }
 
@@ -126,8 +127,7 @@ class User extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getPhoneNumbers()
-    {
+    public function getPhoneNumbers() {
         return $this->hasMany(PhoneNumber::className(), ['user_id' => 'id']);
     }
 
@@ -136,8 +136,36 @@ class User extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getTrips()
-    {
+    public function getTrips() {
         return $this->hasMany(Trip::className(), ['user_id' => 'id']);
     }
+
+    public static function findByEmail($email) {
+        return self::findOne(['email' => $email]);
+    }
+
+    public function validatePassword($password) {
+        return Yii::$app->security->validatePassword($password, $this->password);
+    }
+
+    public function getId() {
+        return $this->id;
+    }
+
+    public function getAuthKey() {
+        return $this->auth_key;
+    }
+
+    public function validateAuthKey($authKey) {
+        return $this->auth_key === $authKey;
+    }
+
+    public static function findIdentity($id) {
+        return self::findOne($id);
+    }
+
+    public static function findIdentityByAccessToken($token, $type = null) {
+        return null;
+    }
+
 }

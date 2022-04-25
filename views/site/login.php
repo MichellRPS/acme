@@ -39,15 +39,24 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <div class="form-group">
         <div class="offset-lg-1 col-lg-11">
-    <?= Html::submitButton('Login', ['class' => 'btn btn-primary', 'name' => 'login-button']) ?>
+            <?= Html::submitButton('Login', ['class' => 'btn btn-primary', 'name' => 'login-button']) ?>
+            <?=
+            yii\authclient\widgets\AuthChoice::widget([
+                'baseAuthUrl' => ['site/auth'],
+                'popupMode' => false,
+                'options' => [
+                    'class' => 'auth-clients-holder'
+                ],
+            ])
+            ?>
         </div>
     </div>
 
         <?php ActiveForm::end(); ?>
 
     <div class="offset-lg-1" style="color:#999;">
-<?=
-  Yii::t('app', 'If no account you can ') . Html::a(Yii::t('app', 'register'), ['/site/register']);
-?>
+        <?=
+        Yii::t('app', 'If no account you can ') . Html::a(Yii::t('app', 'register'), ['/site/register']);
+        ?>
     </div>
 </div>

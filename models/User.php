@@ -20,6 +20,7 @@ use yii\db\Expression;
  * @property string $created
  * @property string $updated
  *
+ * @property Auth[] $auths
  * @property Message[] $fromMessages
  * @property Message[] $toMessages
  * @property PhoneNumber[] $phoneNumbers
@@ -102,6 +103,16 @@ class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface {
             'created' => Yii::t('app', 'Created'),
             'updated' => Yii::t('app', 'Updated'),
         ];
+    }
+    
+    /**
+     * Gets query for [[Auths]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getAuths()
+    {
+        return $this->hasMany(Auth::className(), ['user_id' => 'id']);
     }
 
     /**
